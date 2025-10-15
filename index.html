@@ -1,66 +1,584 @@
-<html>
-
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>starry sky</title>
-  <script src="js/require.js" data-main="js/nebulon.js"></script>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background-color: black;
-    }
-
-    #container {
-      position: relative;
-      width: 100%;
-      height: 100vh;
-    }
-
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    .text-box {
-      width: 100vw;
-      height: 100vh;
-      position: absolute;
-      top: 0px;
-      left: 0px;
-      background-color: transparent;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-    }
-
-    .name-box p {
-      color: white;
-      font-size: 130px;
-      margin: 0px;
-      letter-spacing: 2rem;
-      display: block;
-      text-decoration: none;
-      text-indent: 2rem;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>跨平台课堂积分管理系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root { 
+            --primary-color: #FF69B4; 
+            --danger-color: #FF4500; 
+            --success-color: #32CD32; 
+            --module-bg: rgba(255, 255, 255, 0.95); 
+        } 
+        body { 
+            font-family: 'Comic Sans MS', cursive; 
+            background: linear-gradient(135deg, #FFB6C1 0%, #87CEEB 100%); 
+            padding: 20px; 
+            min-height: 100vh; 
+            margin: 0;
+        } 
+        .class-manager { 
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            background: var(--module-bg); 
+            padding: 15px; 
+            border-radius: 15px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            border: 2px solid var(--primary-color); 
+            z-index: 100; 
+        } 
+        .class-controls { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 10px; 
+        } 
+        .class-selector { 
+            flex-grow: 1; 
+            padding: 8px; 
+            border-radius: 20px; 
+            border: 2px solid var(--primary-color); 
+        } 
+        .container { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 20px; 
+            max-width: 1200px; 
+            margin: 80px auto 20px; 
+        } 
+        .module { 
+            background: var(--module-bg); 
+            padding: 20px; 
+            border-radius: 15px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
+            border: 3px solid var(--primary-color); 
+            min-height: 300px; 
+            display: flex; 
+            flex-direction: column; 
+        } 
+        #nameDisplay { 
+            font-size: 24px; 
+            text-align: center; 
+            padding: 20px; 
+            background: #FFFACD; 
+            border-radius: 15px; 
+            margin: 10px 0; 
+            animation: pulse 1s infinite; 
+            flex-grow: 1; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        } 
+        .score-list { 
+            overflow-y: auto; 
+            flex-grow: 1; 
+            padding: 10px 0; 
+        } 
+        .score-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 10px; 
+            margin: 5px 0; 
+            background: #F0FFF0; 
+            border-radius: 10px; 
+        } 
+        .negative-score { 
+            color: var(--danger-color); 
+            font-weight: bold; 
+        } 
+        .group-section { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
+            gap: 15px; 
+            overflow-y: auto; 
+            padding: 10px 0; 
+        } 
+        .group-item { 
+            background: #E6E6FA; 
+            padding: 15px; 
+            border-radius: 10px; 
+            text-align: center; 
+            position: relative; 
+        } 
+        @keyframes pulse { 
+            0% { transform: scale(1); } 
+            50% { transform: scale(1.05); } 
+            100% { transform: scale(1); } 
+        } 
+        button { 
+            background: var(--primary-color); 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 25px; 
+            cursor: pointer; 
+            transition: all 0.3s; 
+        } 
+        .danger-btn { 
+            background: var(--danger-color) !important; 
+        } 
+        .success-btn { 
+            background: var(--success-color) !important; 
+        } 
+        .emoji-badge { 
+            position: absolute; 
+            right: -10px; 
+            top: -10px; 
+            background: white; 
+            padding: 5px 10px; 
+            border-radius: 15px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); 
+        } 
+        .control-panel {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .file-input {
+            display: none;
+        }
+        .import-btn {
+            display: inline-block;
+        }
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .class-manager {
+                position: static;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
 </head>
-
 <body>
-  <div class="name-box">
-    <div class="text-box">
-      <p>YiM</p>
+    <div class="class-manager">
+        <div class="class-controls">
+            <button onclick="createNewClass()">➕ 新建</button>
+            <button class="danger-btn" onclick="deleteCurrentClass()">🗑️ 删除</button>
+            <select id="classSelector" class="class-selector" onchange="changeClass()"></select>
+        </div>
+        <div>当前班级：<span id="currentClass">无班级数据</span></div>
+        <div class="control-panel">
+            <label class="import-btn">
+                🎈 数据导入
+                <input type="file" id="excelFile" class="file-input" accept=".xlsx,.csv" onchange="importData()">
+            </label>
+            <button onclick="startRoll()">🎲 开始</button>
+            <button id="addScoreBtn" onclick="addScoreToSelected()">✨ +1分</button>
+            <button id="minusScoreBtn" onclick="minusScoreToSelected()">⚠️ -1分</button>
+            <button class="danger-btn" onclick="clearScores()">清空积分</button>
+        </div>
     </div>
-    <div id="container" style="background: black;">
-      <canvas width="1521" height="702"
-        style="position: absolute; top: 0px; left: 0px; width: 1521px; height: 702px; cursor: inherit;">
-      </canvas>
-    </div>
-  </div>
-</body>
 
+    <div class="container">
+        <div class="module">
+            <h2>🎯 随机点名</h2>
+            <div id="nameDisplay">准备就绪</div>
+        </div>
+
+        <div class="module">
+            <h2>⭐ 小组积分</h2>
+            <div id="groupList" class="group-section"></div>
+        </div>
+
+        <div class="module">
+            <h2>🏆 积分榜</h2>
+            <div id="scoreList" class="score-list"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentClass = null;
+        let students = [];
+        let rollInterval;
+        let lastSelectedIndex = -1;
+
+        // 跨平台存储解决方案 - 增强版
+        const StorageManager = {
+            // 尝试多种存储方式，优先使用localStorage，失败则降级
+            setItem: async function(key, value) {
+                try {
+                    localStorage.setItem(key, JSON.stringify(value));
+                    return true;
+                } catch (e) {
+                    console.warn("localStorage 失败，尝试sessionStorage:", e);
+                    try {
+                        sessionStorage.setItem(key, JSON.stringify(value));
+                        return true;
+                    } catch (e2) {
+                        console.warn("sessionStorage 失败，尝试IndexedDB:", e2);
+                        try {
+                            await this.setItemIndexedDB(key, value);
+                            return true;
+                        } catch (e3) {
+                            console.error("所有存储方式均失败:", e3);
+                            return false;
+                        }
+                    }
+                }
+            },
+
+            getItem: async function(key) {
+                try {
+                    const item = localStorage.getItem(key);
+                    if (item) return JSON.parse(item);
+                } catch (e) {
+                    console.warn("从localStorage获取失败:", e);
+                }
+
+                try {
+                    const item = sessionStorage.getItem(key);
+                    if (item) return JSON.parse(item);
+                } catch (e) {
+                    console.warn("从sessionStorage获取失败:", e);
+                }
+
+                try {
+                    return await this.getItemIndexedDB(key);
+                } catch (e) {
+                    console.error("从IndexedDB获取失败:", e);
+                    return null;
+                }
+            },
+
+            // IndexedDB实现
+            initDB: function() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open('ClassScoreDB', 1);
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains('storage')) {
+                            db.createObjectStore('storage', { keyPath: 'id' });
+                        }
+                    };
+
+                    request.onsuccess = (event) => {
+                        this.db = event.target.result;
+                        resolve(this.db);
+                    };
+
+                    request.onerror = (event) => {
+                        reject(event.target.error);
+                    };
+                });
+            },
+
+            setItemIndexedDB: async function(key, value) {
+                if (!this.db) await this.initDB();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['storage'], 'readwrite');
+                    const store = transaction.objectStore('storage');
+                    
+                    const request = store.put({ id: key, data: value });
+                    
+                    request.onsuccess = () => resolve(true);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            getItemIndexedDB: async function(key) {
+                if (!this.db) await this.initDB();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['storage'], 'readonly');
+                    const store = transaction.objectStore('storage');
+                    
+                    const request = store.get(key);
+                    
+                    request.onsuccess = () => {
+                        resolve(request.result ? request.result.data : null);
+                    };
+                    request.onerror = () => reject(request.error);
+                });
+            }
+        };
+
+        // 班级管理
+        async function initClassManager() {
+            try {
+                const classes = await StorageManager.getItem('classList') || [];
+                const selector = document.getElementById('classSelector');
+                selector.innerHTML = classes.map(c => `<option value="${c}">${c}</option>`);
+                
+                if (classes.length > 0) {
+                    currentClass = classes[0];
+                    document.getElementById('currentClass').textContent = currentClass;
+                    await loadData();
+                } else {
+                    document.getElementById('currentClass').textContent = "无班级数据";
+                    students = [];
+                    updateAll();
+                }
+            } catch (error) {
+                console.error("初始化班级管理失败:", error);
+                alert("数据加载失败，请刷新页面重试");
+            }
+        }
+
+        async function createNewClass() {
+            const className = prompt("请输入新班级名称：");
+            if (!className) return;
+
+            try {
+                const classes = await StorageManager.getItem('classList') || [];
+                if (!classes.includes(className)) {
+                    classes.push(className);
+                    await StorageManager.setItem('classList', classes);
+                    await StorageManager.setItem(`studentData_${className}`, []);
+                    currentClass = className;
+                    initClassManager();
+                } else {
+                    alert("班级已存在！");
+                }
+            } catch (error) {
+                console.error("创建班级失败:", error);
+                alert("创建班级失败，请重试");
+            }
+        }
+
+        async function deleteCurrentClass() {
+            if (!currentClass || !confirm(`确定要删除【${currentClass}】吗？`)) return;
+
+            try {
+                const classes = await StorageManager.getItem('classList') || [];
+                const newClasses = classes.filter(c => c !== currentClass);
+                
+                await StorageManager.setItem('classList', newClasses);
+                await StorageManager.setItem(`studentData_${currentClass}`, null);
+                
+                currentClass = newClasses.length > 0 ? newClasses[0] : null;
+                initClassManager();
+            } catch (error) {
+                console.error("删除班级失败:", error);
+                alert("删除班级失败，请重试");
+            }
+        }
+
+        async function changeClass() {
+            currentClass = document.getElementById('classSelector').value;
+            document.getElementById('currentClass').textContent = currentClass;
+            await loadData();
+        }
+
+        // 数据管理
+        async function loadData() {
+            try {
+                const saved = await StorageManager.getItem(`studentData_${currentClass}`);
+                students = saved || [];
+                updateAll();
+            } catch (error) {
+                console.error("加载数据失败:", error);
+                alert("加载数据失败，请重试");
+            }
+        }
+
+        async function saveData() {
+            try {
+                await StorageManager.setItem(`studentData_${currentClass}`, students);
+            } catch (error) {
+                console.error("保存数据失败:", error);
+                alert("数据保存失败，请重试");
+            }
+        }
+
+        // Excel导入 - 移除外部依赖
+        async function importData() {
+            const file = document.getElementById('excelFile').files[0];
+            if (!file) return;
+
+            try {
+                // 检查是否有XLSX库
+                if (typeof XLSX === 'undefined') {
+                    alert("导入功能需要额外库支持，请使用现代浏览器重试");
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[sheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                        if (!jsonData.length) {
+                            alert("文件内容为空！");
+                            return;
+                        }
+
+                        // 提取班级名称
+                        let className = jsonData[0]?.班级 || '';
+                        if (!className) {
+                            className = prompt("请输入班级名称：");
+                            if (!className) return;
+                        }
+
+                        // 更新班级列表
+                        const classes = await StorageManager.getItem('classList') || [];
+                        if (!classes.includes(className)) {
+                            classes.push(className);
+                            await StorageManager.setItem('classList', classes);
+                        }
+
+                        // 处理学生数据
+                        const studentsData = jsonData.map(item => ({
+                            id: (item.学号 || item.ID || Date.now()).toString(),
+                            name: item.姓名 || item.Name || '未知姓名',
+                            group: item.小组 || item.Group || '未分组',
+                            score: 0
+                        }));
+
+                        // 保存数据
+                        currentClass = className;
+                        students = studentsData;
+                        await saveData();
+                        initClassManager();
+                        alert(`成功导入 ${students.length} 条学生数据！`);
+                    } catch (error) {
+                        console.error("解析文件失败:", error);
+                        alert("文件解析失败，请检查文件格式");
+                    }
+                };
+                reader.onerror = function() {
+                    alert("文件读取失败！");
+                };
+                reader.readAsArrayBuffer(file);
+            } catch (error) {
+                console.error("导入数据失败:", error);
+                alert("导入数据失败，请重试");
+            }
+        }
+
+        // 随机点名
+        function startRoll() {
+            if (students.length === 0) {
+                alert("请先导入数据！");
+                return;
+            }
+
+            let count = 0;
+            lastSelectedIndex = -1;
+            document.getElementById('addScoreBtn').disabled = true;
+            document.getElementById('minusScoreBtn').disabled = true;
+            clearInterval(rollInterval);
+
+            rollInterval = setInterval(() => {
+                if (count++ > 25) {
+                    clearInterval(rollInterval);
+                    document.getElementById('addScoreBtn').disabled = false;
+                    document.getElementById('minusScoreBtn').disabled = false;
+                    return;
+                }
+                
+                // 确保不连续选中同一个人
+                let newIndex;
+                do {
+                    newIndex = Math.floor(Math.random() * students.length);
+                } while (students.length > 1 && newIndex === lastSelectedIndex);
+                
+                lastSelectedIndex = newIndex;
+                document.getElementById('nameDisplay').textContent = students[newIndex].name;
+            }, 50);
+        }
+
+        // 积分管理 - 允许负分
+        function updateScore(studentId, delta) {
+            const index = students.findIndex(s => s.id === studentId);
+            if (index === -1) return;
+            
+            // 移除分数下限限制，允许负分
+            students[index].score += delta;
+            saveData();
+            updateAll();
+        }
+
+        function addScoreToSelected() {
+            if (lastSelectedIndex !== -1 && students.length > 0) {
+                updateScore(students[lastSelectedIndex].id, 1);
+            }
+        }
+
+        function minusScoreToSelected() {
+            if (lastSelectedIndex !== -1 && students.length > 0) {
+                updateScore(students[lastSelectedIndex].id, -1);
+            }
+        }
+
+        async function clearScores() {
+            if (!confirm("确定要重置所有积分吗？")) return;
+            
+            students.forEach(s => s.score = 0);
+            await saveData();
+            updateAll();
+        }
+
+        // 小组积分（允许负分）
+        function updateGroupScore(group, delta) {
+            students = students.map(student => {
+                if (student.group === group) {
+                    return { ...student, score: student.score + delta };
+                }
+                return student;
+            });
+            saveData();
+            updateAll();
+        }
+
+        // 界面更新
+        function updateAll() {
+            // 更新积分榜
+            const sortedStudents = [...students].sort((a, b) => b.score - a.score);
+            const scoreList = document.getElementById('scoreList');
+            scoreList.innerHTML = sortedStudents.map(student => `
+                <div class="score-item">
+                    <span>${student.name} (${student.id})</span>
+                    <div class="controls">
+                        <span class="${student.score < 0 ? 'negative-score' : ''}">⭐ ${student.score}</span>
+                        <button onclick="updateScore('${student.id}', 1)">+1</button>
+                        <button onclick="updateScore('${student.id}', -1)">-1</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // 更新小组列表
+            const groups = [...new Set(students.map(s => s.group))];
+            const groupList = document.getElementById('groupList');
+            groupList.innerHTML = groups.map(group => {
+                const members = students.filter(s => s.group === group);
+                const total = members.reduce((sum, m) => sum + m.score, 0);
+                
+                return `
+                    <div class="group-item">
+                        <div class="emoji-badge ${total < 0 ? 'negative-score' : ''}">🏅 ${total}</div>
+                        <h3>${group}</h3>
+                        ${members.map(m => `<div>${m.name}</div>`).join('')}
+                        <div class="btn-group">
+                            <button onclick="updateGroupScore('${group.replace(/'/g, "\\'")}', 5)">+5</button>
+                            <button onclick="updateGroupScore('${group.replace(/'/g, "\\'")}', -5)">-5</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 初始化应用
+        window.addEventListener('load', async () => {
+            try {
+                await StorageManager.initDB();
+                await initClassManager();
+            } catch (error) {
+                console.error("应用初始化失败:", error);
+                alert("系统初始化失败，请刷新页面重试");
+            }
+        });
+    </script>
+</body>
 </html>
